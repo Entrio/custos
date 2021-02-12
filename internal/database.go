@@ -2,30 +2,53 @@ package internal
 
 import (
 	"fmt"
-	"github.com/go-pg/pg/v10"
+	"github.com/Entrio/subenv"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	"time"
 )
 
 var (
-	dbInstance *pg.DB
+	dbInstance  *gorm.DB
+	memorycache *MemoryCache
 )
 
-func InitializeDB() func() {
-	dbInstance = pg.Connect(&pg.Options{
-		Addr:               "172.30.0.9",
-		User:               "custos_user",
-		Password:           "12345Aa",
-		Database:           "custos",
-		ReadTimeout:        1,
-		WriteTimeout:       1,
-		MaxRetries:         2,
-		PoolSize:           10,
-		MinIdleConns:       10,
-		MaxConnAge:         60,
-		IdleCheckFrequency: 30,
-	})
+func InitializeDB() (func(), error) {
+	dsn := fmt.Sprintf(
+		"host=%s user=%s password=%s dbname=%s port=%d TimeZone=%s",
+		subenv.Env("DB_HOST", "192.0168.2.9"),
+		subenv.Env("DB_USER", "custos_user"),
+		subenv.Env("DB_PASSWORD", "12345Aa"),
+		subenv.Env("DB_NAME", "custos"),
+		subenv.EnvI("DB_PORT", 5432),
+		subenv.Env("DB_TZ", "Asia/Almaty"),
+	)
+
+	var err error
+	dbInstance, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if db, dberr := dbInstance.DB(); dberr != nil {
+		return nil, dberr
+	} else {
+		db.SetMaxIdleConns(10)
+		db.SetMaxOpenConns(50)
+		db.SetConnMaxLifetime(time.Minute * 30)
+	}
+
+	fmt.Println(
+		fmt.Sprintf("Connected to %s on port %d",
+			subenv.Env("DB_HOST", "192.0168.2.9"),
+			subenv.EnvI("DB_PORT", 5432),
+		),
+	)
+
+	memorycache = NewMemoryCache()
 
 	return func() {
 		fmt.Println("Closing link to database")
-		defer dbInstance.Close()
-	}
+	}, nil
 }
