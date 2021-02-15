@@ -61,7 +61,7 @@ func main() {
 			e.Start(
 				fmt.Sprintf(
 					"%s:%d",
-					subenv.Env("LISTEN_IP", "192.168.1.36"),
+					subenv.Env("LISTEN_IP", "0.0.0.0"),
 					subenv.EnvI("LISTEN_PORT", 1323),
 				),
 			),
@@ -86,6 +86,9 @@ func main() {
 }
 
 func fetchUserData() (*[]internal.KratosUser, error) {
+
+	return nil, nil
+
 	client := http.Client{
 		Timeout: time.Second * 3,
 	}

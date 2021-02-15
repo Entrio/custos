@@ -8,6 +8,12 @@ import (
 //region Common handlers
 
 func ProcessUsers(users *[]KratosUser) error {
+
+	if users == nil {
+		// this is a nullptr, do nothing
+		return nil
+	}
+
 	// Add each user to cache and make sure that they exist in the database
 	//expiry := time.Now().Add(time.Second * 10)
 	for _, v := range *users {
