@@ -66,3 +66,16 @@ func (mc *MemoryCache) AddItem(name string, value interface{}, expiry *time.Time
 	fmt.Println(fmt.Sprintf("Added %s to cache", name))
 	return nil
 }
+
+func (mc *MemoryCache) GetUser(name string) *KratosUser {
+	mc.rwMutex.RLock()
+	defer mc.rwMutex.RUnlock()
+
+	if val, ok := mc.dictionary[name]; ok {
+		if ku, ok := val.Value.(KratosUser); ok {
+			return &ku
+		}
+	}
+
+	return nil
+}

@@ -6,6 +6,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"strings"
 )
 
 //region Custom oathkeeper context
@@ -84,6 +85,24 @@ func validateOathkeeperRequest(next echo.HandlerFunc) echo.HandlerFunc {
 			}{
 				Message: "Payload failed validation",
 			})
+		}
+
+		// Trim any slashes that are leftover from the request
+
+		or.Service = strings.TrimSuffix(or.Service, "/")
+		or.Verb = strings.TrimSuffix(or.Verb, "/")
+		or.Subject = strings.TrimSuffix(or.Subject, "/")
+
+		if or.ModelID != nil {
+			*or.ModelID = strings.TrimSuffix(*or.ModelID, "/")
+		}
+
+		if or.Model != nil {
+			*or.Model = strings.TrimSuffix(*or.Model, "/")
+		}
+
+		if or.Action != nil {
+			*or.Action = strings.TrimSuffix(*or.Action, "/")
 		}
 
 		oc := &OathkeeperContext{

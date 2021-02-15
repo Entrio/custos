@@ -6,9 +6,9 @@ https://github.com/go-pg/pg
 
 import (
 	"context"
+	"custos/internal"
 	"encoding/json"
 	"fmt"
-	"github.com/Entrio/custos/internal"
 	"github.com/Entrio/subenv"
 	"github.com/labstack/gommon/log"
 	"io/ioutil"
@@ -61,7 +61,7 @@ func main() {
 			e.Start(
 				fmt.Sprintf(
 					"%s:%d",
-					subenv.Env("LISTEN_IP", "192.168.1.33"),
+					subenv.Env("LISTEN_IP", "192.168.1.36"),
 					subenv.EnvI("LISTEN_PORT", 1323),
 				),
 			),

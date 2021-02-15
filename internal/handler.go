@@ -1,6 +1,9 @@
 package internal
 
-import "github.com/labstack/echo/v4"
+import (
+	"fmt"
+	"github.com/labstack/echo/v4"
+)
 
 //region Common handlers
 
@@ -21,6 +24,14 @@ func ProcessUsers(users *[]KratosUser) error {
 func processOathkeeperRequest(c echo.Context) error {
 
 	or := c.(*OathkeeperContext)
+
+	fmt.Println(or.Payload)
+
+	user := memorycache.GetUser(or.Payload.Subject)
+
+	if !user.VerifiableAddresses[0].Verified {
+		return or.JSON(403, nil)
+	}
 
 	return or.JSON(200, struct {
 		Message string `json:"message"`
