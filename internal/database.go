@@ -8,6 +8,10 @@ import (
 	"time"
 )
 
+/**
+https://app.dbdesigner.net/designer/schema/393779
+*/
+
 var (
 	dbInstance  *gorm.DB
 	memorycache *MemoryCache
