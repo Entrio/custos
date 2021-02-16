@@ -58,7 +58,9 @@ func RegisterMiddleware(e *echo.Echo) *echo.Echo {
 		}))
 	}
 
-	e.Use(middleware.Logger())
+	if !subenv.EnvB("APP_TESTING", false) {
+		e.Use(middleware.Logger())
+	}
 
 	e.Validator = &CustomValidator{validator: validator.New()}
 
@@ -72,6 +74,7 @@ func validateOathkeeperRequest(next echo.HandlerFunc) echo.HandlerFunc {
 		or := new(OathkeeperRequest)
 
 		if err := c.Bind(or); err != nil {
+			fmt.Println(err)
 			return c.JSON(403, struct {
 				Message string `json:"message"`
 			}{

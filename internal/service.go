@@ -1,7 +1,10 @@
 package internal
 
 import (
+	"errors"
 	"fmt"
+	"github.com/satori/go.uuid"
+	"gorm.io/gorm"
 	"sync"
 	"time"
 )
@@ -67,15 +70,60 @@ func (mc *MemoryCache) AddItem(name string, value interface{}, expiry *time.Time
 	return nil
 }
 
-func (mc *MemoryCache) GetUser(name string) *KratosUser {
+func (mc *MemoryCache) GetUser(name string) *User {
 	mc.rwMutex.RLock()
 	defer mc.rwMutex.RUnlock()
 
 	if val, ok := mc.dictionary[name]; ok {
-		if ku, ok := val.Value.(KratosUser); ok {
+		if ku, ok := val.Value.(User); ok {
 			return &ku
 		}
 	}
+
+	fmt.Println(fmt.Sprintf("Identity %s not found in cache, looking up in database", name))
+
+	user := new(User)
+	result := dbInstance.Debug().Where(map[string]interface{}{"id": name}).First(user)
+
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return nil
+	}
+
+	if err := mc.AddItem(name, *user, nil); err != nil {
+		return nil
+	}
+
+	return user
+}
+
+func ProcessUsers(users *[]KratosUser) error {
+
+	if users == nil {
+		// this is a nullptr, do nothing
+		return nil
+	}
+
+	// Add each user to cache and make sure that they exist in the database
+	//expiry := time.Now().Add(time.Second * 10)
+	filteredusers := make([]User, 0)
+	for _, v := range *users {
+		u := User{
+			Base: Base{
+				ID: uuid.FromStringOrNil(v.ID),
+			},
+			Email:    v.VerifiableAddresses[0].Email,
+			Position: v.Traits.Position,
+			FirsName: v.Traits.Name.First,
+			LastName: v.Traits.Name.Last,
+			Verified: v.VerifiableAddresses[0].Verified,
+			Enabled:  false,
+		}
+		filteredusers = append(filteredusers, u)
+		//memorycache.AddItem(v.ID, v, &expiry)
+		//memorycache.AddItem(v.ID, v, nil)
+	}
+
+	fmt.Println(filteredusers)
 
 	return nil
 }

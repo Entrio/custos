@@ -7,12 +7,9 @@ https://github.com/go-pg/pg
 import (
 	"context"
 	"custos/internal"
-	"encoding/json"
 	"fmt"
 	"github.com/Entrio/subenv"
 	"github.com/labstack/gommon/log"
-	"io/ioutil"
-	"net/http"
 	"os"
 	"os/signal"
 	"time"
@@ -38,17 +35,12 @@ func main() {
 	signal.Notify(c, os.Interrupt)
 
 	// Fetch the user identities from kratos API
-	users, err := fetchUserData()
-	if err != nil {
+	if err := internal.FetchKratosIdentities(subenv.Env("KRATOS_URL", "http://192.168.2.9:4434/identities")); err != nil {
 		panic(err)
 	}
 
 	dbClose, err := internal.InitializeDB()
 	if err != nil {
-		panic(err)
-	}
-
-	if err := internal.ProcessUsers(users); err != nil {
 		panic(err)
 	}
 
@@ -83,39 +75,4 @@ func main() {
 		}
 		os.Exit(1)
 	}
-}
-
-func fetchUserData() (*[]internal.KratosUser, error) {
-
-	return nil, nil
-
-	client := http.Client{
-		Timeout: time.Second * 3,
-	}
-
-	request, err := http.NewRequest("GET", subenv.Env("KRATOS_URL", "http://192.168.2.9:4434/identities"), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	response, err := client.Do(request)
-
-	if err != nil {
-		return nil, err
-	}
-
-	bufferBytes, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	defer response.Body.Close()
-
-	// unmarshal json
-	kratosUser := new([]internal.KratosUser)
-	err = json.Unmarshal(bufferBytes, kratosUser)
-	if err != nil {
-		return nil, err
-	}
-	return kratosUser, nil
 }

@@ -20,8 +20,8 @@ var (
 func InitializeDB() (func(), error) {
 	dsn := fmt.Sprintf(
 		"host=%s user=%s password=%s dbname=%s port=%d TimeZone=%s",
-		subenv.Env("DB_HOST", "192.0168.2.9"),
-		subenv.Env("DB_USER", "custos_user"),
+		subenv.Env("DB_HOST", "192.168.2.9"),
+		subenv.Env("DB_USER", "postgres"),
 		subenv.Env("DB_PASSWORD", "12345Aa"),
 		subenv.Env("DB_NAME", "custos"),
 		subenv.EnvI("DB_PORT", 5432),

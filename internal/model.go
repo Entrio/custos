@@ -16,7 +16,7 @@ type OathkeeperRequest struct {
 
 type (
 	Base struct {
-		ID uuid.UUID `json:"id"`
+		ID uuid.UUID `json:"id" gorm:"primaryKey"`
 	}
 
 	DT struct {
@@ -57,13 +57,34 @@ type (
 
 	Group struct {
 		Base
-		// Base model contents
+		Name        string  `json:"name"`
+		Description *string `json:"description"`
+		ParentGroup *Group  `json:"parent_group"`
 		DT
 	}
 
-	Permission struct {
+	Service struct {
 		Base
-		// Base model contents
-		DT
+		Name        string `json:"name"`
+		Description string `json:"description"`
+	}
+
+	Model struct {
+		Base
+		Name string `json:"name"`
+	}
+
+	/**
+	Controls group access to a given service
+	*/
+	GroupService struct {
+		Base
+		Group   Group   `json:"group"`
+		Service Service `json:"service"`
+		Verb    string  `json:"verb"`
+		Action  string  `json:"action"`
+	}
+
+	GroupServiceModel struct {
 	}
 )
