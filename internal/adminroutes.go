@@ -126,7 +126,7 @@ func addGroup(c echo.Context) error {
 
 	// Check if the group name is already taken
 	matchCount := int64(0)
-	dbInstance.Where("name = ?", newGroup.Name).Count(&matchCount)
+	dbInstance.Model(&Group{}).Where("name = ?", newGroup.Name).Count(&matchCount)
 
 	if matchCount > 0 {
 		return c.JSON(403, struct {
