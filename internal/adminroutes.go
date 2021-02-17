@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
+	"time"
 )
 
 func registerAdminRoutes(e *echo.Echo) *echo.Echo {
@@ -33,7 +34,8 @@ func updateIdentity(c echo.Context) error {
 	}
 
 	type b struct {
-		Enabled bool `json:"enabled"`
+		Enabled bool   `json:"enabled"`
+		Reason  string `json:"reason"`
 	}
 
 	newState := new(b)
@@ -49,7 +51,6 @@ func updateIdentity(c echo.Context) error {
 
 	if err := c.Validate(newState); err != nil {
 
-		fmt.Println(err)
 		return c.JSON(403, struct {
 			Message string `json:"message"`
 		}{
@@ -57,7 +58,24 @@ func updateIdentity(c echo.Context) error {
 		})
 	}
 
+	if !newState.Enabled && len(newState.Reason) < 1 {
+		// We are blocking the user but no reason was given to why
+		return c.JSON(403, struct {
+			Message string `json:"message"`
+		}{
+			Message: "Please specify the reason why this user is being disabled",
+		})
+	}
+
 	user.Enabled = newState.Enabled
+	if !newState.Enabled {
+		user.DisableReason = &newState.Reason
+		dt := time.Now()
+		user.DisabledDate = &dt
+	} else {
+		user.DisableReason = nil
+		user.DisabledDate = nil
+	}
 	result = dbInstance.Save(user)
 
 	if result.Error != nil {
