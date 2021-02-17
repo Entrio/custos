@@ -66,6 +66,27 @@ func RegisterMiddleware(e *echo.Echo) *echo.Echo {
 
 	return e
 }
+func RegisterAdminMiddleware(e *echo.Echo) *echo.Echo {
+	if e == nil {
+		fmt.Println("New echo from RegisterMiddleware")
+		e = echo.New()
+	}
+
+	if subenv.EnvB("APP_DEBUG", false) {
+		e.Use(middleware.BodyDump(func(c echo.Context, reqBody, resBody []byte) {
+			fmt.Println(string(reqBody))
+		}))
+	}
+
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: []string{"http://192.168.1.36:8080"},
+		AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept},
+	}))
+
+	e.Validator = &CustomValidator{validator: validator.New()}
+
+	return e
+}
 
 func validateOathkeeperRequest(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {

@@ -71,9 +71,6 @@ func (mc *MemoryCache) AddItem(name string, value interface{}, expiry *time.Time
 }
 
 func (mc *MemoryCache) GetUser(name string) *User {
-	mc.rwMutex.RLock()
-	defer mc.rwMutex.RUnlock()
-
 	if val, ok := mc.dictionary[name]; ok {
 		if ku, ok := val.Value.(User); ok {
 			return &ku
@@ -111,12 +108,12 @@ func ProcessUsers(users *[]KratosUser) error {
 			Base: Base{
 				ID: uuid.FromStringOrNil(v.ID),
 			},
-			Email:    v.VerifiableAddresses[0].Email,
-			Position: v.Traits.Position,
-			FirsName: v.Traits.Name.First,
-			LastName: v.Traits.Name.Last,
-			Verified: v.VerifiableAddresses[0].Verified,
-			Enabled:  false,
+			Email:     v.VerifiableAddresses[0].Email,
+			Position:  v.Traits.Position,
+			FirstName: v.Traits.Name.First,
+			LastName:  v.Traits.Name.Last,
+			Verified:  v.VerifiableAddresses[0].Verified,
+			Enabled:   false,
 		}
 		filteredusers = append(filteredusers, u)
 		//memorycache.AddItem(v.ID, v, &expiry)

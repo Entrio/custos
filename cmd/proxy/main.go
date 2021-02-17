@@ -45,7 +45,12 @@ func main() {
 	}
 
 	e := internal.RegisterRoutes(internal.RegisterMiddleware(nil))
+	echoAdmin := internal.RegisterAdminRoutes(internal.RegisterAdminMiddleware(nil))
+
+	echoAdmin.HideBanner = true
 	e.HideBanner = true
+
+	echoAdmin.Logger.SetLevel(log.INFO)
 	e.Logger.SetLevel(log.DEBUG)
 
 	go func() {
@@ -55,6 +60,18 @@ func main() {
 					"%s:%d",
 					subenv.Env("LISTEN_IP", "0.0.0.0"),
 					subenv.EnvI("LISTEN_PORT", 1323),
+				),
+			),
+		)
+	}()
+
+	go func() {
+		echoAdmin.Logger.Fatal(
+			echoAdmin.Start(
+				fmt.Sprintf(
+					"%s:%d",
+					subenv.Env("ADMIN_LISTEN_IP", "0.0.0.0"),
+					subenv.EnvI("ADMIN_LISTEN_PORT", 1324),
 				),
 			),
 		)
@@ -73,6 +90,11 @@ func main() {
 		if err := e.Shutdown(ctx); err != nil {
 			e.Logger.Fatal(err)
 		}
+
+		if err := echoAdmin.Shutdown(ctx); err != nil {
+			echoAdmin.Logger.Fatal(err)
+		}
+
 		os.Exit(1)
 	}
 }

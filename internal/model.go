@@ -27,12 +27,12 @@ type (
 
 	User struct {
 		Base
-		Email    string `json:"email"`
-		Position string `json:"position"`
-		FirsName string `json:"firs_name"`
-		LastName string `json:"last_name"`
-		Verified bool   `json:"verified"`
-		Enabled  bool   `json:"enabled"`
+		Email     string `json:"email"`
+		Position  string `json:"position"`
+		FirstName string `json:"first_name"`
+		LastName  string `json:"last_name"`
+		Verified  bool   `json:"verified"`
+		Enabled   bool   `json:"enabled"`
 		DT
 	}
 

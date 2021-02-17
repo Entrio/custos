@@ -16,3 +16,14 @@ func RegisterRoutes(e *echo.Echo) *echo.Echo {
 
 	return e
 }
+
+func RegisterAdminRoutes(e *echo.Echo) *echo.Echo {
+	if e == nil {
+		e = echo.New()
+		fmt.Println("New echo from RegisterAdminRoutes")
+	}
+
+	registerAdminRoutes(e)
+
+	return e
+}
