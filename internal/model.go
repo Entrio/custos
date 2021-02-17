@@ -59,9 +59,10 @@ type (
 
 	Group struct {
 		Base
-		Name        string  `json:"name"`
-		Description *string `json:"description"`
-		ParentGroup *Group  `json:"parent_group"`
+		Name          string  `json:"name"`
+		Description   *string `json:"description"`
+		ParentGroupID *string `json:"-" gorm:"-"`
+		ParentGroup   *Group  `json:"parent_group,omitempty"`
 		DT
 	}
 
