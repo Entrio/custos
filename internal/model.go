@@ -63,6 +63,9 @@ type (
 		Description   *string `json:"description"`
 		ParentGroupID *string `json:"-" gorm:"column:parent_group"`
 		ParentGroup   *Group  `json:"parent_group,omitempty"`
+		Enabled       bool    `json:"enabled"`
+		Protected     bool    `json:"protected" gorm:"<-:false"`
+		Users         []*User `json:"users" gorm:"many2many:user_group"`
 		DT
 	}
 

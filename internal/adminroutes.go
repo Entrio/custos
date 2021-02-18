@@ -28,7 +28,7 @@ func getIdentities(c echo.Context) error {
 
 func getGroups(c echo.Context) error {
 	groups := new([]Group)
-	dbInstance.Preload("ParentGroup").Find(groups)
+	dbInstance.Preload("ParentGroup").Preload("Users").Find(groups)
 
 	return c.JSON(200, groups)
 }
@@ -135,6 +135,19 @@ func addGroup(c echo.Context) error {
 		}{
 			Message: "Group with that name exists",
 		})
+	}
+
+	if newGroup.Parent != nil {
+		parent := new(Group)
+		dbInstance.Where("id = ?", *newGroup.Parent).First(parent)
+
+		if parent.Protected {
+			return c.JSON(400, struct {
+				Message string `json:"message"`
+			}{
+				Message: "Cannot inherit a protected group",
+			})
+		}
 	}
 
 	group := &Group{
