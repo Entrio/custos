@@ -28,7 +28,7 @@ func getIdentities(c echo.Context) error {
 
 func getGroups(c echo.Context) error {
 	groups := new([]Group)
-	dbInstance.Find(groups)
+	dbInstance.Preload("ParentGroup").Find(groups)
 
 	return c.JSON(200, groups)
 }
