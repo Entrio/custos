@@ -61,7 +61,7 @@ type (
 		Base
 		Name          string  `json:"name"`
 		Description   *string `json:"description"`
-		ParentGroupID *string `json:"-" gorm:"-"`
+		ParentGroupID *string `json:"-" gorm:"column:parent_group"`
 		ParentGroup   *Group  `json:"parent_group,omitempty"`
 		DT
 	}

@@ -100,8 +100,9 @@ func updateIdentity(c echo.Context) error {
 func addGroup(c echo.Context) error {
 
 	type b struct {
-		Name        string `json:"name" validate:"alphanum,max=255,min=3"`
-		Description string `json:"description" validate:"max=255,min=3"`
+		Name        string  `json:"name" validate:"alphanum,max=255,min=3"`
+		Description string  `json:"description" validate:"max=255,min=3"`
+		Parent      *string `json:"parent,omitempty" validate:"omitempty,uuid4"`
 	}
 
 	newGroup := new(b)
@@ -117,7 +118,7 @@ func addGroup(c echo.Context) error {
 
 	if err := c.Validate(newGroup); err != nil {
 		fmt.Println(err.Error())
-		return c.JSON(403, struct {
+		return c.JSON(400, struct {
 			Message string `json:"message"`
 		}{
 			Message: "Payload failed validation",
@@ -129,7 +130,7 @@ func addGroup(c echo.Context) error {
 	dbInstance.Model(&Group{}).Where("name = ?", newGroup.Name).Count(&matchCount)
 
 	if matchCount > 0 {
-		return c.JSON(403, struct {
+		return c.JSON(400, struct {
 			Message string `json:"message"`
 		}{
 			Message: "Group with that name exists",
@@ -142,11 +143,18 @@ func addGroup(c echo.Context) error {
 		},
 		Name:          newGroup.Name,
 		Description:   &newGroup.Description,
-		ParentGroupID: nil,
-		ParentGroup:   nil,
+		ParentGroupID: newGroup.Parent,
 	}
 
-	dbInstance.Debug().Create(group)
+	res := dbInstance.Debug().Create(group)
+
+	if res.Error != nil {
+		return c.JSON(400, struct {
+			Message string `json:"message"`
+		}{
+			Message: res.Error.Error(),
+		})
+	}
 
 	memorycache.AddItem(fmt.Sprintf("g_%s", group.ID), group, nil)
 
