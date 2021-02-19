@@ -16,7 +16,7 @@ type OathkeeperRequest struct {
 
 type (
 	Base struct {
-		ID uuid.UUID `json:"id" gorm:"primaryKey"`
+		ID uuid.UUID `json:"id" gorm:"primaryKey,<-:create"`
 	}
 
 	DT struct {

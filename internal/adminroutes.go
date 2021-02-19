@@ -13,6 +13,7 @@ func registerAdminRoutes(e *echo.Echo) *echo.Echo {
 
 	e.GET("identities", getIdentities)
 	e.PUT("identities/:id", updateIdentity)
+
 	e.GET("groups", getGroups)
 	e.POST("groups", addGroup)
 	e.PUT("groups/:id", updateGroup)
@@ -178,6 +179,32 @@ func addGroup(c echo.Context) error {
 }
 
 func updateGroup(c echo.Context) error {
+
+	type r struct {
+		Enabled     *bool
+		Name        *string `json:"newName" validate:"omitempty,alphanum,max=255,min=3"`
+		Description *string `json:"newDescription" validate:"omitempty,max=255,min=3"`
+	}
+
+	incoming := new(r)
+
+	if err := c.Bind(incoming); err != nil {
+		return c.JSON(400, struct {
+			Message string `json:"message"`
+		}{
+			Message: "Invalid payload given",
+		})
+	}
+
+	if err := c.Validate(incoming); err != nil {
+		fmt.Println(err.Error())
+		return c.JSON(400, struct {
+			Message string `json:"message"`
+		}{
+			Message: "Payload failed validation",
+		})
+	}
+
 	group := new(Group)
 	result := dbInstance.Model(&Group{}).Where(&Base{ID: uuid.FromStringOrNil(c.Param("id"))}).First(group)
 
@@ -193,6 +220,33 @@ func updateGroup(c echo.Context) error {
 
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return c.JSON(404, nil)
+	}
+
+	changed := false
+
+	if incoming.Name != nil {
+		if group.Name != *incoming.Name {
+			changed = true
+			group.Name = *incoming.Name
+		}
+	}
+
+	if incoming.Description != nil {
+		if *group.Description != *incoming.Description {
+			changed = true
+			group.Description = incoming.Description
+		}
+	}
+
+	if incoming.Enabled != nil {
+		if group.Enabled != *incoming.Enabled {
+			changed = true
+			group.Enabled = *incoming.Enabled
+		}
+	}
+
+	if changed {
+		dbInstance.Save(group)
 	}
 
 	return c.JSON(200, group)
