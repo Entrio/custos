@@ -15,6 +15,7 @@ func registerAdminRoutes(e *echo.Echo) *echo.Echo {
 	e.PUT("identities/:id", updateIdentity)
 	e.GET("groups", getGroups)
 	e.POST("groups", addGroup)
+	e.PUT("groups/:id", updateGroup)
 	e.POST("groups/:id/members/delete", deleteGroupMember)
 	e.POST("groups/:id/members/add", addGroupMembers)
 
@@ -172,6 +173,27 @@ func addGroup(c echo.Context) error {
 	}
 
 	memorycache.AddItem(fmt.Sprintf("g_%s", group.ID), group, nil)
+
+	return c.JSON(200, group)
+}
+
+func updateGroup(c echo.Context) error {
+	group := new(Group)
+	result := dbInstance.Model(&Group{}).Where(&Base{ID: uuid.FromStringOrNil(c.Param("id"))}).First(group)
+
+	if group.Protected {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return c.JSON(403, struct {
+				Message string `json:"message"`
+			}{
+				Message: "Cannot alter a protected group",
+			})
+		}
+	}
+
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return c.JSON(404, nil)
+	}
 
 	return c.JSON(200, group)
 }
