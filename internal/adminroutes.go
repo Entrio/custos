@@ -6,6 +6,7 @@ import (
 	"github.com/labstack/echo/v4"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"time"
 )
 
@@ -339,18 +340,32 @@ func addGroupMembers(c echo.Context) error {
 		})
 	}
 
-	result := dbInstance.Debug().Model(
-		&Group{
-			Base: Base{
-				ID: uuid.FromStringOrNil(c.Param("id")),
-			},
-		}).Association("Users").Append(users)
+	assoc := []map[string]interface{}{}
 
-	if result != nil {
+	for _, k := range *users {
+		assoc = append(assoc, map[string]interface{}{
+			"user_id":  k.ID,
+			"group_id": c.Param("id"),
+		})
+	}
+
+	result := dbInstance.Debug().Table("user_group").Clauses(clause.OnConflict{DoNothing: true}).Create(assoc)
+
+	/*
+		result := dbInstance.Debug().Model(
+				&Group{
+					Base: Base{
+						ID: uuid.FromStringOrNil(c.Param("id")),
+					},
+				}).Association("Users").Append(users)
+
+	*/
+
+	if result.Error != nil {
 		return c.JSON(400, struct {
 			Message string `json:"message"`
 		}{
-			Message: result.Error(),
+			Message: result.Error.Error(),
 		})
 	}
 
