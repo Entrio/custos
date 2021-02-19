@@ -16,6 +16,7 @@ func registerAdminRoutes(e *echo.Echo) *echo.Echo {
 	e.GET("groups", getGroups)
 	e.POST("groups", addGroup)
 	e.POST("groups/:id/members/delete", deleteGroupMember)
+	e.POST("groups/:id/members/add", addGroupMembers)
 
 	return e
 }
@@ -216,6 +217,58 @@ func deleteGroupMember(c echo.Context) error {
 				ID: uuid.FromStringOrNil(c.Param("id")),
 			},
 		}).Association("Users").Delete(users)
+
+	if result != nil {
+		return c.JSON(400, struct {
+			Message string `json:"message"`
+		}{
+			Message: result.Error(),
+		})
+	}
+
+	return c.JSON(200, users)
+}
+
+func addGroupMembers(c echo.Context) error {
+	type r struct {
+		Users []uuid.UUID `json:"users"`
+	}
+
+	incoming := new(r)
+
+	if err := c.Bind(incoming); err != nil {
+		return c.JSON(400, struct {
+			Message string `json:"message"`
+		}{
+			Message: "Invalid payload given",
+		})
+	}
+
+	if err := c.Validate(incoming); err != nil {
+		return c.JSON(400, struct {
+			Message string `json:"message"`
+		}{
+			Message: "Payload failed validation",
+		})
+	}
+
+	users := new([]User)
+	count := int64(0)
+	dbInstance.Model(&User{}).Where("id in ?", incoming.Users).Find(users).Count(&count)
+	if count != int64(len(incoming.Users)) {
+		return c.JSON(400, struct {
+			Message string `json:"message"`
+		}{
+			Message: "Unknown users",
+		})
+	}
+
+	result := dbInstance.Debug().Model(
+		&Group{
+			Base: Base{
+				ID: uuid.FromStringOrNil(c.Param("id")),
+			},
+		}).Association("Users").Append(users)
 
 	if result != nil {
 		return c.JSON(400, struct {
