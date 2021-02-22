@@ -384,7 +384,7 @@ func addGroupMembers(c echo.Context) error {
 func getServices(c echo.Context) error {
 	services := new([]Service)
 
-	res := dbInstance.Model(&Service{}).Preload("Verbs").First(services)
+	res := dbInstance.Model(&Service{}).Preload("Verbs").Find(services)
 
 	if res.Error != nil {
 		return c.JSON(500, struct {
