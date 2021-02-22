@@ -21,6 +21,8 @@ func registerAdminRoutes(e *echo.Echo) *echo.Echo {
 	e.POST("groups/:id/members/delete", deleteGroupMember)
 	e.POST("groups/:id/members/add", addGroupMembers)
 
+	e.POST("services", addService)
+
 	return e
 }
 
@@ -30,6 +32,8 @@ func getIdentities(c echo.Context) error {
 
 	return c.JSON(200, idents)
 }
+
+//region Groups
 
 func getGroups(c echo.Context) error {
 	groups := new([]Group)
@@ -207,7 +211,7 @@ func updateGroup(c echo.Context) error {
 	}
 
 	group := new(Group)
-	result := dbInstance.Model(&Group{}).Where(&Base{ID: uuid.FromStringOrNil(c.Param("id"))}).First(group)
+	result := dbInstance.Model(&Group{}).Where(&Base{ID: uuid.FromStringOrNil(c.Param("id"))}).Preload("Users").First(group)
 
 	if group.Protected {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
@@ -371,3 +375,106 @@ func addGroupMembers(c echo.Context) error {
 
 	return c.JSON(200, users)
 }
+
+//endregion
+
+//region Services
+
+func addService(c echo.Context) error {
+	type b struct {
+		Name        string   `json:"name" validate:"alphanum,max=255,min=3"`
+		Description string   `json:"description" validate:"max=255,min=3"`
+		Verbs       []string `json:"verbs" validate:"required,dive,oneof=POST GET PUT DELETE"`
+	}
+
+	newService := new(b)
+
+	if err := c.Bind(newService); err != nil {
+		fmt.Println(err.Error())
+		return c.JSON(400, struct {
+			Message string `json:"message"`
+		}{
+			Message: "Invalid payload given",
+		})
+	}
+
+	if err := c.Validate(newService); err != nil {
+		return c.JSON(400, struct {
+			Message string `json:"message"`
+		}{
+			Message: "Payload failed validation",
+		})
+	}
+
+	matchCount := int64(0)
+	dbInstance.Model(&Service{}).Where("name = ?", newService.Name).Count(&matchCount)
+
+	if matchCount > 0 {
+		return c.JSON(400, struct {
+			Message string `json:"message"`
+		}{
+			Message: "Service with that name exists",
+		})
+	}
+
+	verbs := new([]Verb)
+	count := int64(0)
+	dbInstance.Debug().Model(&Verb{}).Where("name in ?", newService.Verbs).Find(verbs).Count(&count)
+	if count != int64(len(newService.Verbs)) {
+		fmt.Println(fmt.Sprintf("Got %d verbs in request, found %d in DB", len(newService.Verbs), count))
+		return c.JSON(400, struct {
+			Message string `json:"message"`
+		}{
+			Message: "Unknown verbs",
+		})
+	}
+
+	tx := dbInstance.Begin()
+
+	service := &Service{
+		Base: Base{
+			ID: uuid.NewV4(),
+		},
+		Name:        newService.Name,
+		Description: newService.Description,
+	}
+
+	res := tx.Debug().Create(service)
+
+	if res.Error != nil {
+		tx.Rollback()
+		return c.JSON(400, struct {
+			Message string `json:"message"`
+		}{
+			Message: res.Error.Error(),
+		})
+	}
+
+	assoc := []map[string]interface{}{}
+
+	for _, k := range *verbs {
+		assoc = append(assoc, map[string]interface{}{
+			"service_id": service.ID,
+			"verb_id":    k.ID,
+		})
+	}
+
+	result := tx.Debug().Table("service_verb").Clauses(clause.OnConflict{DoNothing: true}).Create(assoc)
+
+	if result.Error != nil {
+		tx.Rollback()
+		return c.JSON(400, struct {
+			Message string `json:"message"`
+		}{
+			Message: res.Error.Error(),
+		})
+	}
+
+	tx.Commit()
+
+	memorycache.AddItem(fmt.Sprintf("s_%s", service.ID), service, nil)
+
+	return c.JSON(200, service)
+}
+
+//endregion

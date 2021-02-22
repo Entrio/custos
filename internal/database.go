@@ -52,7 +52,13 @@ func InitializeDB() (func(), error) {
 
 	memorycache = NewMemoryCache()
 
+	migrate()
+
 	return func() {
 		fmt.Println("Closing link to database")
 	}, nil
+}
+
+func migrate() {
+	dbInstance.AutoMigrate(&Verb{}, &Service{})
 }

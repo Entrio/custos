@@ -120,8 +120,5 @@ func ProcessUsers(users *[]KratosUser) error {
 		//memorycache.AddItem(v.ID, v, nil)
 	}
 
-	//TODO: Process teh database
-	fmt.Println(filteredusers)
-
 	return nil
 }

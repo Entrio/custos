@@ -73,6 +73,13 @@ type (
 		Base
 		Name        string `json:"name"`
 		Description string `json:"description"`
+		Verbs       []Verb `json:"verbs" gorm:"many2many:service_verb;save_associations:false"`
+		DT
+	}
+
+	Verb struct {
+		Base
+		Name string `json:"name"`
 	}
 
 	Model struct {
