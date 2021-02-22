@@ -21,6 +21,7 @@ func registerAdminRoutes(e *echo.Echo) *echo.Echo {
 	e.POST("groups/:id/members/delete", deleteGroupMember)
 	e.POST("groups/:id/members/add", addGroupMembers)
 
+	e.GET("services", getServices)
 	e.POST("services", addService)
 
 	return e
@@ -380,6 +381,22 @@ func addGroupMembers(c echo.Context) error {
 
 //region Services
 
+func getServices(c echo.Context) error {
+	services := new([]Service)
+
+	res := dbInstance.Model(&Service{}).Preload("Verbs").First(services)
+
+	if res.Error != nil {
+		return c.JSON(500, struct {
+			Message string `json:"message"`
+		}{
+			Message: "Failed to fetch data",
+		})
+	}
+
+	return c.JSON(200, services)
+}
+
 func addService(c echo.Context) error {
 	type b struct {
 		Name        string   `json:"name" validate:"alphanum,max=255,min=3"`
@@ -471,6 +488,8 @@ func addService(c echo.Context) error {
 	}
 
 	tx.Commit()
+
+	dbInstance.Model(service).Association("Verbs").Find(&service.Verbs)
 
 	memorycache.AddItem(fmt.Sprintf("s_%s", service.ID), service, nil)
 
