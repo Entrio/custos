@@ -212,7 +212,7 @@ func updateGroup(c echo.Context) error {
 	}
 
 	group := new(Group)
-	result := dbInstance.Model(&Group{}).Where(&Base{ID: uuid.FromStringOrNil(c.Param("id"))}).Preload("Users").First(group)
+	result := dbInstance.Model(&Group{}).Where(&Base{ID: uuid.FromStringOrNil(c.Param("id"))}).First(group)
 
 	if group.Protected {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
@@ -252,8 +252,11 @@ func updateGroup(c echo.Context) error {
 	}
 
 	if changed {
+		group.UpdatedAt = time.Now()
 		dbInstance.Save(group)
 	}
+
+	dbInstance.Model(group).Association("Users").Find(&group.Users)
 
 	return c.JSON(200, group)
 }
@@ -349,8 +352,10 @@ func addGroupMembers(c echo.Context) error {
 
 	for _, k := range *users {
 		assoc = append(assoc, map[string]interface{}{
-			"user_id":  k.ID,
-			"group_id": c.Param("id"),
+			"user_id":    k.ID,
+			"group_id":   c.Param("id"),
+			"created_at": time.Now(),
+			"updated_at": time.Now(),
 		})
 	}
 

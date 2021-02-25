@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/satori/go.uuid"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"sync"
 	"time"
 )
@@ -25,6 +26,11 @@ func NewMemoryCache() *MemoryCache {
 	instance := &MemoryCache{
 		dictionary: map[string]memoryCacheValue{},
 		terminate:  make(chan bool),
+	}
+
+	instance.dictionary["users"] = memoryCacheValue{
+		Value:  map[string]interface{}{},
+		Expiry: nil,
 	}
 	go instance.startCleanup()
 	return instance
@@ -70,10 +76,19 @@ func (mc *MemoryCache) AddItem(name string, value interface{}, expiry *time.Time
 	return nil
 }
 
+func (mc *MemoryCache) AddUser(id string, user interface{}) error {
+	mc.rwMutex.Lock()
+	mc.dictionary["users"].Value.(map[string]interface{})[id] = user
+	mc.rwMutex.Unlock()
+	fmt.Println(fmt.Sprintf("Added user %s to cache", id))
+	return nil
+}
+
 func (mc *MemoryCache) GetUser(name string) *User {
-	if val, ok := mc.dictionary[name]; ok {
-		if ku, ok := val.Value.(User); ok {
-			return &ku
+	if val, ok := mc.dictionary["users"]; ok {
+
+		if ku, ok := val.Value.(map[string]interface{})[name]; ok {
+			return ku.(*User)
 		}
 	}
 
@@ -86,7 +101,7 @@ func (mc *MemoryCache) GetUser(name string) *User {
 		return nil
 	}
 
-	if err := mc.AddItem(name, *user, nil); err != nil {
+	if err := mc.AddUser(name, *user); err != nil {
 		return nil
 	}
 
@@ -117,8 +132,10 @@ func ProcessUsers(users *[]KratosUser) error {
 		}
 		filteredusers = append(filteredusers, u)
 		//memorycache.AddItem(v.ID, v, &expiry)
-		//memorycache.AddItem(v.ID, v, nil)
+		memorycache.AddUser(v.ID, v)
 	}
+
+	dbInstance.Debug().Clauses(clause.OnConflict{DoNothing: true}).CreateInBatches(filteredusers, 5)
 
 	return nil
 }

@@ -34,13 +34,13 @@ func main() {
 	c := make(chan os.Signal)
 	signal.Notify(c, os.Interrupt)
 
-	// Fetch the user identities from kratos API
-	if err := internal.FetchKratosIdentities(subenv.Env("KRATOS_URL", "http://192.168.2.9:4434/identities")); err != nil {
+	dbClose, err := internal.InitializeDB()
+	if err != nil {
 		panic(err)
 	}
 
-	dbClose, err := internal.InitializeDB()
-	if err != nil {
+	// Fetch the user identities from kratos API
+	if err := internal.FetchKratosIdentities(subenv.Env("KRATOS_URL", "http://192.168.2.9:4434/identities")); err != nil {
 		panic(err)
 	}
 
