@@ -440,10 +440,9 @@ func addService(c echo.Context) error {
 	}
 
 	verbs := new([]Verb)
-	count := int64(0)
-	dbInstance.Debug().Model(&Verb{}).Where("name in ?", newService.Verbs).Find(verbs).Count(&count)
-	if count != int64(len(newService.Verbs)) {
-		fmt.Println(fmt.Sprintf("Got %d verbs in request, found %d in DB", len(newService.Verbs), count))
+	dbInstance.Debug().Model(&Verb{}).Where("name in ?", newService.Verbs).Find(verbs)
+	if len(*verbs) != len(newService.Verbs) {
+		fmt.Println(fmt.Sprintf("Got %d verbs in request, found %d in DB", len(newService.Verbs), len(*verbs)))
 		return c.JSON(400, struct {
 			Message string `json:"message"`
 		}{
@@ -478,6 +477,8 @@ func addService(c echo.Context) error {
 		assoc = append(assoc, map[string]interface{}{
 			"service_id": service.ID,
 			"verb_id":    k.ID,
+			"created_at": time.Now(),
+			"updated_at": time.Now(),
 		})
 	}
 

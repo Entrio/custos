@@ -52,6 +52,10 @@ func InitializeDB() (func(), error) {
 
 	memorycache = NewMemoryCache()
 
+	if subenv.EnvB("APP_DB_DEBUG", true) {
+		dbInstance = dbInstance.Debug()
+	}
+
 	migrate()
 
 	return func() {
