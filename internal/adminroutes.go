@@ -7,6 +7,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+	"strings"
 	"time"
 )
 
@@ -23,6 +24,7 @@ func registerAdminRoutes(e *echo.Echo) *echo.Echo {
 
 	e.GET("services", getServices)
 	e.POST("services", addService)
+	e.PUT("services/:id", updateServiceGroups)
 
 	return e
 }
@@ -500,6 +502,49 @@ func addService(c echo.Context) error {
 	memorycache.AddItem(fmt.Sprintf("s_%s", service.ID), service, nil)
 
 	return c.JSON(200, service)
+}
+
+func updateServiceGroups(c echo.Context) error {
+	type req struct {
+		GroupVerb []string `json:"groups"`
+	}
+
+	id := c.Param("id")
+
+	groupVerbs := new(req)
+
+	if err := c.Bind(groupVerbs); err != nil {
+		return jsonError(c, 400, "Failed to bind to body", err)
+	}
+
+	if err := c.Validate(groupVerbs); err != nil {
+		return jsonError(c, 400, "Failed to validate body", err)
+	}
+
+	// Need to parse each element of the slice and do the following:
+	// 0) If there are no elements, clear all of the groups for current service. Aka delete the relations
+	// 1) Validate group on the left side
+	// 2) Validate verb on the right side
+	// 3) Insert into the relation table correct data
+	// 4) respond with the update relations
+
+	// 0) Check for empty
+	if len(groupVerbs.GroupVerb) == 0 {
+		// we need to clear assocs for this group
+		tx := dbInstance.Begin()
+		tx.Exec("DELETE FROM service_group_verb WHERE service_id = ?", id)
+		//TODO: Remove from cache
+		tx.Commit()
+	}
+
+	groups := []string{}
+	for _, v := range groupVerbs.GroupVerb {
+		res := strings.Split(v, ":")
+		fmt.Println(fmt.Sprintf("Group: %s\nVerb: %s", res[0], res[1]))
+		groups = append(groups, res[0])
+	}
+
+	return c.JSON(200, groupVerbs)
 }
 
 //endregion
