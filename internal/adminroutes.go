@@ -21,6 +21,7 @@ func registerAdminRoutes(e *echo.Echo) *echo.Echo {
 	e.PUT("groups/:id", updateGroup)
 	e.POST("groups/:id/members/delete", deleteGroupMember)
 	e.POST("groups/:id/members/add", addGroupMembers)
+	e.DELETE("groups/:id", deleteGRoup)
 
 	e.GET("services", getServices)
 	e.POST("services", addService)
@@ -382,6 +383,16 @@ func addGroupMembers(c echo.Context) error {
 	}
 
 	return c.JSON(200, users)
+}
+
+func deleteGRoup(c echo.Context) error {
+	group := new(Group)
+
+	if err := dbInstance.Model(&Group{}).First(group, "id", c.Param("id")); err.Error != nil {
+		return jsonError(c, 400, "This group doesnt exist", err.Error)
+	}
+
+	// Delete service associations
 }
 
 //endregion
