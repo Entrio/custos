@@ -393,6 +393,26 @@ func deleteGRoup(c echo.Context) error {
 	}
 
 	// Delete service associations
+	tx := dbInstance.Begin()
+
+	if err := tx.Exec("DELETE FROM service_group_verb WHERE group_id = ?", group.ID); err.Error != nil {
+		tx.Rollback()
+		return jsonError(c, 400, "Failed to delete group verbs", err.Error)
+	}
+
+	if err := tx.Exec("DELETE FROM user_group WHERE group_id = ?", group.ID); err.Error != nil {
+		tx.Rollback()
+		return jsonError(c, 400, "Failed to delete group", err.Error)
+	}
+
+	if err := tx.Exec("DELETE FROM groups WHERE id = ?", group.ID); err.Error != nil {
+		tx.Rollback()
+		return jsonError(c, 400, "Failed to delete group", err.Error)
+	}
+
+	tx.Commit()
+
+	return c.JSON(200, nil)
 }
 
 //endregion
