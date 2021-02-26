@@ -71,12 +71,18 @@ type (
 
 	Service struct {
 		Base
-		Name        string `json:"name"`
-		Description string `json:"description"`
-		Verbs       []Verb `json:"verbs" gorm:"many2many:service_verb;save_associations:false"`
-		Enabled     bool   `json:"enabled"`
-		Protected   bool   `json:"protected"`
+		Name        string              `json:"name"`
+		Description string              `json:"description"`
+		Verbs       []Verb              `json:"verbs" gorm:"many2many:service_verb;save_associations:false"`
+		Enabled     bool                `json:"enabled"`
+		Protected   bool                `json:"protected"`
+		GroupVerbs  []ServiceGroupVerbs `json:"groups"`
 		DT
+	}
+	ServiceGroupVerbs struct {
+		ServiceID uuid.UUID `json:"service_id"`
+		VerbID    uuid.UUID `json:"verb_id"`
+		GroupID   uuid.UUID `json:"group_id"`
 	}
 
 	Verb struct {

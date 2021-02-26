@@ -389,9 +389,9 @@ func addGroupMembers(c echo.Context) error {
 //region Services
 
 func getServices(c echo.Context) error {
-	services := new([]Service)
+	services := []Service{}
 
-	res := dbInstance.Model(&Service{}).Preload("Verbs").Find(services)
+	res := dbInstance.Model(&Service{}).Preload("Verbs").Find(&services)
 
 	if res.Error != nil {
 		return c.JSON(500, struct {
@@ -399,6 +399,35 @@ func getServices(c echo.Context) error {
 		}{
 			Message: "Failed to fetch data",
 		})
+	}
+
+	sgv := new([]ServiceGroupVerbs)
+	ids := []string{}
+
+	for _, v := range services {
+		ids = append(ids, v.ID.String())
+	}
+
+	res2 := dbInstance.Table("service_group_verb").Where("service_id IN ?", ids).Find(sgv)
+
+	if res2.Error != nil {
+		return c.JSON(500, struct {
+			Message string `json:"message"`
+		}{
+			Message: "Failed to fetch group data",
+		})
+	}
+
+	for k, s := range services {
+		g := []ServiceGroupVerbs{}
+
+		for _, gv := range *sgv {
+			if gv.ServiceID == s.ID {
+				g = append(g, gv)
+			}
+		}
+
+		services[k].GroupVerbs = g
 	}
 
 	return c.JSON(200, services)
@@ -537,14 +566,31 @@ func updateServiceGroups(c echo.Context) error {
 		tx.Commit()
 	}
 
-	groups := []string{}
+	serviceGroupVerb := []map[string]interface{}{}
 	for _, v := range groupVerbs.GroupVerb {
 		res := strings.Split(v, ":")
-		fmt.Println(fmt.Sprintf("Group: %s\nVerb: %s", res[0], res[1]))
-		groups = append(groups, res[0])
+		serviceGroupVerb = append(serviceGroupVerb, map[string]interface{}{
+			"service_id": id,
+			"group_id":   res[0],
+			"verb_id":    res[1],
+			"created_at": time.Now(),
+			"updated_at": time.Now(),
+		})
 	}
 
-	return c.JSON(200, groupVerbs)
+	tx := dbInstance.Begin()
+	if res := tx.Table("service_group_verb").Clauses(clause.OnConflict{DoNothing: true}).Create(&serviceGroupVerb); res.Error != nil {
+		return jsonError(c, 400, "Failed to bind groups to service", res.Error)
+		tx.Rollback()
+	}
+
+	tx.Commit()
+
+	service := new(Service)
+	dbInstance.Model(&Service{}).Preload("Verbs").First(service, "id", id)
+	dbInstance.Table("service_group_verb").Where("service_id", id).Find(&service.GroupVerbs)
+
+	return c.JSON(200, service)
 }
 
 //endregion
