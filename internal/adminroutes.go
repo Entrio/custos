@@ -49,7 +49,7 @@ func updateIdentity(c echo.Context) error {
 
 	id := c.Param("id")
 	user := new(User)
-	result := dbInstance.Debug().Where("id = ?", id).First(user)
+	result := dbInstance.Where("id = ?", id).First(user)
 
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return c.JSON(404, nil)
@@ -171,7 +171,7 @@ func addGroup(c echo.Context) error {
 		ParentGroupID: newGroup.Parent,
 	}
 
-	res := dbInstance.Debug().Create(group)
+	res := dbInstance.Create(group)
 
 	if res.Error != nil {
 		return c.JSON(400, struct {
@@ -298,7 +298,7 @@ func deleteGroupMember(c echo.Context) error {
 		})
 	}
 
-	result := dbInstance.Debug().Model(
+	result := dbInstance.Model(
 		&Group{
 			Base: Base{
 				ID: uuid.FromStringOrNil(c.Param("id")),
@@ -361,7 +361,7 @@ func addGroupMembers(c echo.Context) error {
 		})
 	}
 
-	result := dbInstance.Debug().Table("user_group").Clauses(clause.OnConflict{DoNothing: true}).Create(assoc)
+	result := dbInstance.Table("user_group").Clauses(clause.OnConflict{DoNothing: true}).Create(assoc)
 
 	/*
 		result := dbInstance.Debug().Model(
@@ -471,7 +471,7 @@ func addService(c echo.Context) error {
 	}
 
 	verbs := new([]Verb)
-	dbInstance.Debug().Model(&Verb{}).Where("name in ?", newService.Verbs).Find(verbs)
+	dbInstance.Model(&Verb{}).Where("name in ?", newService.Verbs).Find(verbs)
 	if len(*verbs) != len(newService.Verbs) {
 		fmt.Println(fmt.Sprintf("Got %d verbs in request, found %d in DB", len(newService.Verbs), len(*verbs)))
 		return c.JSON(400, struct {
@@ -491,7 +491,7 @@ func addService(c echo.Context) error {
 		Description: newService.Description,
 	}
 
-	res := tx.Debug().Create(service)
+	res := tx.Create(service)
 
 	if res.Error != nil {
 		tx.Rollback()
@@ -513,7 +513,7 @@ func addService(c echo.Context) error {
 		})
 	}
 
-	result := tx.Debug().Table("service_verb").Clauses(clause.OnConflict{DoNothing: true}).Create(assoc)
+	result := tx.Table("service_verb").Clauses(clause.OnConflict{DoNothing: true}).Create(assoc)
 
 	if result.Error != nil {
 		tx.Rollback()
