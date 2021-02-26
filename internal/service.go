@@ -84,12 +84,16 @@ func (mc *MemoryCache) AddUser(id string, user interface{}) error {
 	return nil
 }
 
-func (mc *MemoryCache) GetUser(name string) *User {
-	if val, ok := mc.dictionary["users"]; ok {
+func (mc *MemoryCache) GetUser(name string, forceFresh bool) *User {
+	if !forceFresh {
+		if val, ok := mc.dictionary["users"]; ok {
 
-		if ku, ok := val.Value.(map[string]interface{})[name]; ok {
-			return ku.(*User)
+			if ku, ok := val.Value.(map[string]interface{})[name]; ok {
+				return ku.(*User)
+			}
 		}
+	} else {
+		fmt.Println(fmt.Sprintf("Identity %s not found in cache, looking up in database (forced)", name))
 	}
 
 	fmt.Println(fmt.Sprintf("Identity %s not found in cache, looking up in database", name))
@@ -132,7 +136,7 @@ func ProcessUsers(users *[]KratosUser) error {
 		}
 		filteredusers = append(filteredusers, u)
 		//memorycache.AddItem(v.ID, v, &expiry)
-		memorycache.AddUser(v.ID, v)
+		memorycache.AddUser(v.ID, &u)
 	}
 
 	dbInstance.Debug().Clauses(clause.OnConflict{DoNothing: true}).CreateInBatches(filteredusers, 5)

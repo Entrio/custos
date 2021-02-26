@@ -12,34 +12,28 @@ import (
 //region Router functions
 
 func processOathkeeperRequest(c echo.Context) error {
-
+	fmt.Println("\n##### HRBAC START #####\b")
 	or := c.(*OathkeeperContext)
 
 	fmt.Println(or.Payload)
-	user := memorycache.GetUser(or.Payload.Subject)
+	user := memorycache.GetUser(or.Payload.Subject, true)
 	fmt.Println(user)
 
 	if user == nil {
-		return or.JSON(403, nil)
+		return jsonError(or, 403, "User not found", nil)
 	}
 
 	if !user.Enabled {
-		return or.JSON(403, struct {
-			Message string `json:"message"`
-		}{
-			Message: "User is disabled",
-		})
+		return jsonError(or, 403, "User is disabled", nil)
 	}
 
 	if !user.Verified {
-		return or.JSON(403, struct {
-			Message string `json:"message"`
-		}{
-			Message: "User has not verified their account",
-		})
+		return jsonError(or, 403, "User hasn't verified their account", nil)
 	}
 
-	//TODO: Build the hrbac rules
+	if user.DeletedAt != nil {
+		return jsonError(or, 403, "User has been deleted", nil)
+	}
 
 	/**
 	This is the logic that we need to process:
@@ -56,6 +50,8 @@ func processOathkeeperRequest(c echo.Context) error {
 	  3.2.1) Fetch service model for the group and action
 	  3.2.2) If no result is found or the action is deny, terminate the flow and deny access
 	*/
+
+	fmt.Println("\n##### HRBAC END #####\b")
 
 	return or.JSON(200, struct {
 		Message string `json:"message"`
