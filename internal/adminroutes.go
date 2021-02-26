@@ -579,6 +579,7 @@ func updateServiceGroups(c echo.Context) error {
 	}
 
 	tx := dbInstance.Begin()
+	tx.Exec("DELETE FROM service_group_verb WHERE service_id = ?", id)
 	if res := tx.Table("service_group_verb").Clauses(clause.OnConflict{DoNothing: true}).Create(&serviceGroupVerb); res.Error != nil {
 		return jsonError(c, 400, "Failed to bind groups to service", res.Error)
 		tx.Rollback()
