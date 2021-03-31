@@ -68,7 +68,7 @@ func RegisterMiddleware(e *echo.Echo) *echo.Echo {
 }
 func RegisterAdminMiddleware(e *echo.Echo) *echo.Echo {
 	if e == nil {
-		fmt.Println("New echo from RegisterMiddleware")
+		fmt.Println("New echo from RegisterAdminMiddleware")
 		e = echo.New()
 	}
 
@@ -79,8 +79,9 @@ func RegisterAdminMiddleware(e *echo.Echo) *echo.Echo {
 	}
 
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins: []string{"http://192.168.1.36:8080"},
-		AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept},
+		AllowOrigins:     []string{"http://192.168.1.36:8080"},
+		AllowHeaders:     []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept, echo.HeaderAccessControlAllowOrigin, echo.HeaderAccessControlAllowCredentials},
+		AllowCredentials: true,
 	}))
 
 	e.Validator = &CustomValidator{validator: validator.New()}

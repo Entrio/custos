@@ -26,6 +26,7 @@ func registerAdminRoutes(e *echo.Echo) *echo.Echo {
 	e.GET("services", getServices)
 	e.POST("services", addService)
 	e.PUT("services/:id", updateServiceGroups)
+	e.PUT("services/:id/toggle", toggleServiceGroup)
 
 	return e
 }
@@ -562,6 +563,40 @@ func addService(c echo.Context) error {
 	memorycache.AddItem(fmt.Sprintf("s_%s", service.ID), service, nil)
 
 	return c.JSON(200, service)
+}
+
+func toggleServiceGroup(c echo.Context) error {
+
+	type req struct {
+		Enabled bool `json:"enabled"`
+	}
+
+	updatedService := new(req)
+
+	if err := c.Bind(updatedService); err != nil {
+		return jsonError(c, 400, "Failed to bind to body", err)
+	}
+
+	if err := c.Validate(updatedService); err != nil {
+		return jsonError(c, 400, "Failed to validate body", err)
+	}
+
+	id := c.Param("id")
+	var service Service
+	var err error
+
+	if err = dbInstance.Where("id = ?", id).Preload("Verbs").First(&service).Error; err != nil {
+		return jsonError(c, 404, "Service not found", err)
+	}
+
+	if err = dbInstance.Exec("UPDATE services SET enabled = ? WHERE id = ?", updatedService.Enabled, service.ID).Error; err != nil {
+		return jsonError(c, 404, "Error updating service", err)
+	}
+
+	service.Enabled = updatedService.Enabled
+
+	return c.JSON(200, service)
+
 }
 
 func updateServiceGroups(c echo.Context) error {
