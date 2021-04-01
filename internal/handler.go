@@ -81,8 +81,21 @@ func processOathkeeperRequest(c echo.Context) error {
 
 	accessGranted := false
 
+	var gidlist []string
+
+	for _, v := range groups {
+		gidlist = append(gidlist, v.ID.String())
+	}
+
+	type svg struct {
+		ServiceID string `gorm:"column:service_id"`
+		VerbID    string `gorm:"column:verb_id"`
+		GroupID   string `gorm:"column:group_id"`
+	}
+
+	var serviceGroupVerb []svg
 	match := int64(0)
-	if err := dbInstance.Table("service_group_verb").Where("service_id = ? AND verb_id = ? AND group_id = ?", service.ID, verb.ID, groups[0].ID).Count(&match); err.Error != nil {
+	if err := dbInstance.Table("service_group_verb").Where("service_id = ? AND verb_id = ? AND group_id IN (?)", service.ID, verb.ID, gidlist).Count(&match).First(&serviceGroupVerb); err.Error != nil {
 		return jsonError(or, 403, "Access denied", nil)
 	}
 
@@ -90,7 +103,18 @@ func processOathkeeperRequest(c echo.Context) error {
 		return jsonError(or, 403, "Access denied", nil)
 	}
 
-	accessGranted = true
+	// We have a match, but does the group that has access to the resource is active?
+	for _, sg := range serviceGroupVerb {
+		for _, g := range groups {
+			if g.ID.String() == sg.GroupID {
+				// we have a match but are we enabled?
+				if g.Enabled {
+					accessGranted = true
+					break
+				}
+			}
+		}
+	}
 
 	/**
 	This is the logic that we need to process:
@@ -108,6 +132,7 @@ func processOathkeeperRequest(c echo.Context) error {
 	  3.2.2) If no result is found or the action is deny, terminate the flow and deny access
 	*/
 
+	fmt.Println(fmt.Sprintf("Access granted: %v", accessGranted))
 	fmt.Println("\n##### HRBAC END #####\b")
 
 	if accessGranted {
