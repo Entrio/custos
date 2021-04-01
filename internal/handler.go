@@ -56,8 +56,20 @@ func processOathkeeperRequest(c echo.Context) error {
 		return jsonError(or, 403, "Access denied", nil)
 	}
 
+	atLeastOneGroupHasAccess := false
 	if err := dbInstance.Model(&Group{}).Where("id in ?", gids).Find(&groups); err.Error != nil {
 		return jsonError(or, 403, "Failed to find groups", err.Error)
+	}
+
+	for _, grp := range groups {
+		if grp.Enabled {
+			atLeastOneGroupHasAccess = true
+			break
+		}
+	}
+
+	if !atLeastOneGroupHasAccess {
+		return jsonError(or, 403, "Not a single group has access to this resource", nil)
 	}
 
 	verb := new(Verb)
@@ -83,7 +95,7 @@ func processOathkeeperRequest(c echo.Context) error {
 	/**
 	This is the logic that we need to process:
 	1) The request comes in. We collect all of the following:
-	  1.1) Service - make sure it exists ✓
+	  1.1) Service - make sure it exists and is enabled ✓
 	  1.2) Model - make sure it exists in the database (NOT YET IMPLEMENTED)
 	  1.3) Verb - make sure its within valid ranges ✓
 	2) We fetch user's group(s) ✓
