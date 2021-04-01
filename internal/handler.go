@@ -41,6 +41,10 @@ func processOathkeeperRequest(c echo.Context) error {
 		return jsonError(or, 403, "Failed to find service", err.Error)
 	}
 
+	if !service.Enabled {
+		return jsonError(or, 403, "Service is disabled", nil)
+	}
+
 	groups := []Group{}
 	gids := []string{}
 
