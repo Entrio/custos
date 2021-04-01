@@ -56,20 +56,13 @@ func processOathkeeperRequest(c echo.Context) error {
 		return jsonError(or, 403, "Access denied", nil)
 	}
 
-	atLeastOneGroupHasAccess := false
-	if err := dbInstance.Model(&Group{}).Where("id in ?", gids).Find(&groups); err.Error != nil {
+	if err := dbInstance.Model(&Group{}).Where("enabled = true AND id in ?", gids).Find(&groups); err.Error != nil {
 		return jsonError(or, 403, "Failed to find groups", err.Error)
 	}
 
+	gids = []string{}
 	for _, grp := range groups {
-		if grp.Enabled {
-			atLeastOneGroupHasAccess = true
-			break
-		}
-	}
-
-	if !atLeastOneGroupHasAccess {
-		return jsonError(or, 403, "Not a single group has access to this resource", nil)
+		gids = append(gids, grp.ID.String())
 	}
 
 	verb := new(Verb)
@@ -77,15 +70,7 @@ func processOathkeeperRequest(c echo.Context) error {
 		return jsonError(or, 403, "Failed to find verb", err.Error)
 	}
 
-	fmt.Println(fmt.Sprintf("User %s trying to access service %s via the %s method", user.FirstName, service.Name, verb.Name))
-
 	accessGranted := false
-
-	var gidlist []string
-
-	for _, v := range groups {
-		gidlist = append(gidlist, v.ID.String())
-	}
 
 	type svg struct {
 		ServiceID string `gorm:"column:service_id"`
@@ -95,7 +80,7 @@ func processOathkeeperRequest(c echo.Context) error {
 
 	var serviceGroupVerb []svg
 	match := int64(0)
-	if err := dbInstance.Table("service_group_verb").Where("service_id = ? AND verb_id = ? AND group_id IN (?)", service.ID, verb.ID, gidlist).Count(&match).First(&serviceGroupVerb); err.Error != nil {
+	if err := dbInstance.Table("service_group_verb").Where("service_id = ? AND verb_id = ? AND group_id IN (?)", service.ID, verb.ID, gids).Count(&match).First(&serviceGroupVerb); err.Error != nil {
 		return jsonError(or, 403, "Access denied", nil)
 	}
 
