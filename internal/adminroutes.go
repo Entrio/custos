@@ -21,7 +21,7 @@ func registerAdminRoutes(e *echo.Echo) *echo.Echo {
 	e.PUT("groups/:id", updateGroup)
 	e.POST("groups/:id/members/delete", deleteGroupMember)
 	e.POST("groups/:id/members/add", addGroupMembers)
-	e.DELETE("groups/:id", deleteGRoup)
+	e.DELETE("groups/:id", deleteGroup)
 
 	e.GET("services", getServices)
 	e.POST("services", addService)
@@ -55,6 +55,10 @@ func updateIdentity(c echo.Context) error {
 
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return c.JSON(404, nil)
+	}
+
+	if user.Protected {
+		return jsonError(c, 400, "This user is protected, no manipulation is allowed", nil)
 	}
 
 	type b struct {
@@ -386,7 +390,7 @@ func addGroupMembers(c echo.Context) error {
 	return c.JSON(200, users)
 }
 
-func deleteGRoup(c echo.Context) error {
+func deleteGroup(c echo.Context) error {
 	group := new(Group)
 
 	if err := dbInstance.Model(&Group{}).First(group, "id", c.Param("id")); err.Error != nil {

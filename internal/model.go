@@ -33,6 +33,7 @@ type (
 		LastName      string     `json:"last_name"`
 		Verified      bool       `json:"verified"`
 		Enabled       bool       `json:"enabled"`
+		Protected     bool       `json:"protected" gorm:"->"`
 		DisableReason *string    `json:"disable_reason,omitempty" gorm:"column:enabled_reason"`
 		DisabledDate  *time.Time `json:"disabled_date,omitempty" gorm:"column:enabled_date"`
 		DT
