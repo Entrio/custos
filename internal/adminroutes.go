@@ -95,6 +95,8 @@ func updateIdentity(c echo.Context) error {
 		})
 	}
 
+	//TODO: Add something
+
 	user.Enabled = newState.Enabled
 	if !newState.Enabled {
 		user.DisableReason = &newState.Reason
