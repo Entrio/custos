@@ -50,13 +50,13 @@ func InitializeDB() (func(), error) {
 		),
 	)
 
+	migrate()
+
 	memorycache = NewMemoryCache()
 
 	if subenv.EnvB("APP_DB_DEBUG", true) {
 		dbInstance = dbInstance.Debug()
 	}
-
-	migrate()
 
 	return func() {
 		fmt.Println("Closing link to database")
@@ -65,6 +65,6 @@ func InitializeDB() (func(), error) {
 
 func migrate() {
 	fmt.Println("Performing migrations...")
-	dbInstance.AutoMigrate(&Verb{}, &Service{}, &User{})
-	fmt.Println("PMigrations complete...")
+	dbInstance.AutoMigrate(&Verb{}, &Service{}, &ServiceGroupVerbs{}, &Group{}, &User{})
+	fmt.Println("Migrations complete...")
 }
