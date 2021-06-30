@@ -110,3 +110,7 @@ type (
 	GroupServiceModel struct {
 	}
 )
+
+func (ServiceGroupVerbs) TableName() string {
+	return "service_group_verb"
+}
