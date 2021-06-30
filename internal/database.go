@@ -64,5 +64,7 @@ func InitializeDB() (func(), error) {
 }
 
 func migrate() {
-	dbInstance.AutoMigrate(&Verb{}, &Service{})
+	fmt.Println("Performing migrations...")
+	dbInstance.AutoMigrate(&Verb{}, &Service{}, &User{})
+	fmt.Println("PMigrations complete...")
 }
